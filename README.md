@@ -135,11 +135,11 @@ yc compute instance list --format=table | grep -E "NAME|bastion|web"
 
 <img width="1046" height="291" alt="image" src="https://github.com/user-attachments/assets/1f8194fa-9a35-45c8-b63b-e65fc67bffaf" />
 
-2.7 Бастион
+### 3 Бастион
 
 <img width="1150" height="928" alt="image" src="https://github.com/user-attachments/assets/ba49d820-0282-4495-aa09-8a9b9ad4249a" />
 
-2.8 Проверим доступ к веб-серверам
+3.1 Проверим доступ к веб-серверам
 
 ```python
 # На бастионе (ты уже внутри) проверяем доступ к web-a
@@ -158,9 +158,10 @@ curl -v web-a.ru-central1.internal:80 2>&1 | head -20
 
 <img width="947" height="644" alt="image" src="https://github.com/user-attachments/assets/313b23aa-9cac-4595-97aa-b8acc7e0737f" />
 
-2.9 устанавливаем nginx на веб-серверы
+### 4nginx 
+4.1 устанавливаем nginx на веб-серверы
 
-2.9.1 Создание inventory файла
+Создание inventory файла
 
 ```python
 cat > ~/inventory.ini << EOF
@@ -174,7 +175,7 @@ ansible_ssh_private_key_file=/home/ubuntu/.ssh/id_rsa
 EOF
 ```
 
-2.9.2 Создание Ansible плейбука
+4.2 Создание Ansible плейбука
 
 ```python
 cat > ~/nginx-playbook.yml << EOF
@@ -212,12 +213,12 @@ cat > ~/nginx-playbook.yml << EOF
         dest: /var/www/html/index.html
 EOF
 ```
-2.9.3 Запуск плейбука
+4.3 Запуск плейбука
 
 ```python
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ~/inventory.ini ~/nginx-playbook.yml
 ```
-2.9.4 Проверка результата
+4.4 Проверка результата
 
 ```python
 curl web-a.ru-central1.internal
@@ -225,7 +226,7 @@ curl web-b.ru-central1.internal
 ```
 <img width="951" height="287" alt="image" src="https://github.com/user-attachments/assets/34a528c5-2442-4aed-b456-e77add56cfcd" />
 
-2.10 Cоздаем Application Load Balancer
+### 5 Cоздаем Application Load Balancer
 
 
 
