@@ -1,6 +1,6 @@
 # Diplom-kobzev-FSYS-52
 Diplom-kobzev
-1) Установите YC CLI
+### 1) Установка YC CLI
 ```python
 curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
 exec bash
@@ -27,27 +27,27 @@ yc iam service-account create --name diploma-sa
 ```
 <img width="596" height="120" alt="image" src="https://github.com/user-attachments/assets/9076b043-8db0-45e1-a0fb-04fd67c155b5" />
 
-5) Назначаем роль editor
+1.5) Назначаем роль editor
 ```python
 yc resource-manager folder add-access-binding --id b1gcvraf0lu2e23skc09 --role editor --subject serviceAccount:aje7r79535effekotoni
 ```
-1.5.1 сначала получим ID сервисного аккаунта:
+1.6 сначала получим ID сервисного аккаунта:
 
 ```python
 yc iam service-account get --name diploma-sa --format json
 ```
  <img width="708" height="189" alt="image" src="https://github.com/user-attachments/assets/7373c073-a8d9-4754-b554-2c433cac5b3e" />
 
-1.5.2 назначаем роль
+1.7 назначаем роль
 
 <img width="1699" height="239" alt="image" src="https://github.com/user-attachments/assets/d9d81973-ae9e-486f-97c3-35ac6e4f73d5" />
 
-1.6 создаём авторизованный ключ
+1.8 создаём авторизованный ключ
 
 ```python
 yc iam key create --service-account-name diploma-sa --output ~/key.json
 ```
 <img width="835" height="81" alt="image" src="https://github.com/user-attachments/assets/9c233322-b63d-4a99-af81-bbe67c35e3d9" />
 
-
+### 2) Установка Terraform
 
