@@ -112,6 +112,7 @@ terraform plan
 ```
 
 <img width="1307" height="949" alt="image" src="https://github.com/user-attachments/assets/6f4b0680-45bb-40d4-b4c5-f39f57ddc5cc" />
+<img width="2554" height="1269" alt="image" src="https://github.com/user-attachments/assets/2d08433c-0bcc-4729-bcab-9d190e2ea7e8" />
 
 2.5 Применяем конфигурацию
 
@@ -134,6 +135,10 @@ yc compute instance list --format=table | grep -E "NAME|bastion|web"
 ```
 
 <img width="1046" height="291" alt="image" src="https://github.com/user-attachments/assets/1f8194fa-9a35-45c8-b63b-e65fc67bffaf" />
+<img width="2550" height="1284" alt="image" src="https://github.com/user-attachments/assets/479ba518-9c75-44a3-adc2-b19358d7bab0" />
+<img width="870" height="971" alt="image" src="https://github.com/user-attachments/assets/d8a5a88b-0223-4426-9f6a-cb7a44968672" />
+
+
 
 ### 3 Бастион
 
@@ -227,6 +232,125 @@ curl web-b.ru-central1.internal
 <img width="951" height="287" alt="image" src="https://github.com/user-attachments/assets/34a528c5-2442-4aed-b456-e77add56cfcd" />
 
 ### 5 Cоздаем Application Load Balancer
+
+5.1 конфигурация балансировщика
+
+```python
+cat > alb.tf << 'EOF'
+# Target Group (целевая группа)
+resource "yandex_alb_target_group" "web" {
+  name = "web-target-group"
+
+  target {
+    subnet_id = yandex_vpc_subnet.private-a.id
+    ip_address = yandex_compute_instance.web-a.network_interface[0].ip_address
+  }
+
+  target {
+    subnet_id = yandex_vpc_subnet.private-b.id
+    ip_address = yandex_compute_instance.web-b.network_interface[0].ip_address
+  }
+}
+
+# Backend Group (группа бэкендов)
+resource "yandex_alb_backend_group" "web" {
+  name = "web-backend-group"
+
+  http_backend {
+    name = "web-backend"
+    weight = 1
+    port = 80
+    target_group_ids = [yandex_alb_target_group.web.id]
+    healthcheck {
+      timeout = "10s"
+      interval = "2s"
+      http_healthcheck {
+        path = "/"
+      }
+    }
+  }
+}
+
+# HTTP Router (маршрутизатор)
+resource "yandex_alb_http_router" "web" {
+  name = "web-router"
+}
+
+# Virtual Host (виртуальный хост)
+resource "yandex_alb_virtual_host" "web" {
+  name = "web-host"
+  http_router_id = yandex_alb_http_router.web.id
+
+  route {
+    name = "main-route"
+    http_route {
+      http_match {
+        path {
+          prefix = "/"
+        }
+      }
+      http_route_action {
+        backend_group_id = yandex_alb_backend_group.web.id
+        timeout = "60s"
+      }
+    }
+  }
+}
+
+# Load Balancer (балансировщик)
+resource "yandex_alb_load_balancer" "web" {
+  name = "web-load-balancer"
+  network_id = yandex_vpc_network.diploma.id
+
+  allocation_policy {
+    location {
+      zone_id = "ru-central1-a"
+      subnet_id = yandex_vpc_subnet.public.id
+    }
+  }
+
+  listener {
+    name = "web-listener"
+    endpoint {
+      address {
+        external_ipv4_address {
+        }
+      }
+      ports = [80]
+    }
+    http {
+      handler {
+        http_router_id = yandex_alb_http_router.web.id
+      }
+    }
+  }
+}
+
+output "lb_ip" {
+  value = yandex_alb_load_balancer.web.listener[0].endpoint[0].address[0].external_ipv4_address[0].address
+}
+EOF
+```
+<img width="787" height="897" alt="image" src="https://github.com/user-attachments/assets/2d524d7f-dead-4e1a-95b3-0f0228313075" />
+
+Сайт : 
+
+<img width="1151" height="394" alt="image" src="https://github.com/user-attachments/assets/e93c86d1-a0cc-45ea-8012-4fd6c1678cb6" />
+
+### 6 Zabix 
+
+6.1 Создаём ВМ для Zabbix
+
+```python
+cd ~/diploma/terraform
+nano vms.tf
+```
+
+
+
+
+![Uploading image.png…]()
+
 
 
 
