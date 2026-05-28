@@ -1,5 +1,7 @@
 # Diplom-kobzev-FSYS-52
-Diplom-kobzev
+
+Дипломная работа по профессии «Системный администратор» Кобзев И.В
+
 ### 1) Установка YC CLI
 ```python
 curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
@@ -551,6 +553,7 @@ sudo docker ps
 # Посмотреть логи (дождаться готовности)
 sudo docker logs -f kibana
 ```
+<img width="2550" height="1351" alt="image" src="https://github.com/user-attachments/assets/c1f35a69-c399-40b5-a3f7-0161393b8b8a" />
 
 
 7.2 Установка Elastic
@@ -586,11 +589,129 @@ curl -X GET "localhost:9200"
 exit
 ```
 
+7.3 Создаём Index Pattern
 
+Устанавливаем Filebeat
 
+```python
+# Добавить ключ Elastic
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
 
+# Добавить репозиторий (версия 7.x)
+echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
 
+# Обновить и установить
+sudo apt update
+sudo apt install -y filebeat
 
+# Создать конфиг
+sudo mkdir -p /etc/filebeat
+sudo tee /etc/filebeat/filebeat.yml > /dev/null <<EOF
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - /var/log/nginx/access.log
+    - /var/log/nginx/error.log
+  fields:
+    service: nginx
+    host: web-a
 
+output.elasticsearch:
+  hosts: ["10.2.0.35:9200"]
 
+setup.kibana:
+  host: "10.1.0.26:5601"
+EOF
 
+# Запустить Filebeat
+sudo systemctl start filebeat
+sudo systemctl enable filebeat
+
+# Проверить статус
+sudo systemctl status filebeat
+
+# Проверить соединение
+sudo filebeat test output
+```
+
+Выполняем на web-a; web-b; elasticsearch; kibana; zabbix.
+
+```Python
+# Установить Docker
+sudo apt update
+sudo apt install -y docker.io nginx
+sudo systemctl start docker nginx
+sudo systemctl enable docker nginx
+
+# Создать конфиг Filebeat
+sudo mkdir -p /etc/filebeat
+sudo tee /etc/filebeat/filebeat.yml > /dev/null <<EOF
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - /var/log/nginx/access.log
+    - /var/log/nginx/error.log
+  fields:
+    service: nginx
+    host: web-b
+
+output.elasticsearch:
+  hosts: ["10.2.0.35:9200"]
+  protocol: "http"
+
+setup.kibana:
+  host: "10.1.0.26:5601"
+EOF
+
+# Изменить права на логи
+sudo chmod 755 /var/log/nginx
+sudo touch /var/log/nginx/access.log /var/log/nginx/error.log
+sudo chmod 644 /var/log/nginx/*.log
+
+# Сгенерировать тестовые запросы
+curl http://localhost/
+
+# Запустить Filebeat
+sudo docker run -d \
+  --name filebeat \
+  --restart always \
+  --user root \
+  -v /etc/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro \
+  -v /var/log/nginx:/var/log/nginx:ro \
+  docker.elastic.co/beats/filebeat:7.17.23
+
+# Проверить
+sudo docker logs filebeat --tail 20
+```
+
+<img width="1236" height="1026" alt="image" src="https://github.com/user-attachments/assets/24c3fb7f-87fe-4aea-8871-baaa765d7a6a" />
+
+7.4 Gроверим индексы в Elasticsearch
+
+```Python 
+curl -X GET "http://10.2.0.35:9200/_cat/indices?v"
+```
+<img width="1070" height="143" alt="image" src="https://github.com/user-attachments/assets/c49d98ec-cb56-4221-94f2-9ea2a59bcfc8" />
+
+7.5 Cоздадим Index Pattern в Kibana
+<img width="2553" height="1338" alt="image" src="https://github.com/user-attachments/assets/616fd8e6-e417-41c0-afe5-aa2d05a7963a" />
+<img width="2533" height="1277" alt="image" src="https://github.com/user-attachments/assets/14aa3abb-0893-42f4-a6f6-67eb07ee5329" />
+<img width="2540" height="1276" alt="image" src="https://github.com/user-attachments/assets/df783057-9a8b-459d-a1c7-86ea4fa920a9" />
+
+7.6 Снапшоты 
+```Python 
+# Создать снапшоты для всех 6 дисков
+for disk_id in epdeoobpssu9ba221pov fhm1kv92kdsinot8ieac fhmfqu7eov70jq0mmed1 fhmip9m6ehfd42p1eil6 fhmk6k3dk1pjtukmnghl fhmvf2a22n41lg7a1u5e; do
+  echo "Создаю снапшот для диска $disk_id..."
+  yc compute snapshot create \
+    --name "snapshot-$(date +%Y%m%d-%H%M%S)-${disk_id: -6}" \
+    --disk-id "$disk_id" \
+    --description "Дипломный проект - снапшот от $(date)"
+  sleep 2  # небольшая пауза между созданием снапшотов
+done
+```
+<img width="1359" height="621" alt="image" src="https://github.com/user-attachments/assets/54ed9527-a78e-4274-bc97-d4273548fb10" />
+
+```Python 
