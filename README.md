@@ -794,3 +794,13 @@ done
 <img width="1816" height="574" alt="image" src="https://github.com/user-attachments/assets/ac4a12db-f38e-49c9-a1c4-49da87836212" />
 
 <img width="1896" height="430" alt="image" src="https://github.com/user-attachments/assets/6a6d85ef-b737-4530-bab5-df0182138fdd" />
+
+
+1. Zabbix (http://111.88.253.35:8080)
+Логин: Admin
+Пароль: zabbix
+
+2. Kibana (http://111.88.248.116:5601)
+Скриншот Discover с логами (как вы делали ранее)
+
+3. Сайт (http://158.160.130.23)
