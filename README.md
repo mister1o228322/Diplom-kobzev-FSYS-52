@@ -452,7 +452,139 @@ sudo systemctl status zabbix-server --no-pager
 
 <img width="2556" height="1281" alt="image" src="https://github.com/user-attachments/assets/7a0a22dd-57cd-4919-895b-486e022df517" />
 
+### 7.Kibana 
 
+7.1 Создаем ВМ Kibana и Elastic
+
+```python
+# Elasticsearch ВМ
+resource "yandex_compute_instance" "elasticsearch" {
+  name        = "elasticsearch"
+  hostname    = "elasticsearch"
+  platform_id = "standard-v2"
+  zone        = "ru-central1-a"
+
+  resources {
+    cores         = 2
+    core_fraction = 20
+    memory        = 4
+  }
+
+  boot_disk {
+    initialize_params {
+      image_id = "fd83vkt13re8v8cdapql"
+      size     = 20
+    }
+  }
+
+  network_interface {
+    subnet_id = yandex_vpc_subnet.private-a.id
+    nat       = false
+  }
+
+  metadata = {
+    ssh-keys = "ubuntu:${file("/home/kobzev/.ssh/id_rsa.pub")}"
+  }
+
+  scheduling_policy {
+    preemptible = true
+  }
+}
+
+# Kibana ВМ
+resource "yandex_compute_instance" "kibana" {
+  name        = "kibana"
+  hostname    = "kibana"
+  platform_id = "standard-v2"
+  zone        = "ru-central1-a"
+
+  resources {
+    cores         = 2
+    core_fraction = 20
+    memory        = 2
+  }
+
+  boot_disk {
+    initialize_params {
+      image_id = "fd83vkt13re8v8cdapql"
+      size     = 15
+    }
+  }
+
+  network_interface {
+    subnet_id = yandex_vpc_subnet.public.id
+    nat       = true
+  }
+
+  metadata = {
+    ssh-keys = "ubuntu:${file("/home/kobzev/.ssh/id_rsa.pub")}"
+  }
+
+  scheduling_policy {
+    preemptible = true
+  }
+}
+```
+<img width="855" height="893" alt="image" src="https://github.com/user-attachments/assets/e0e35559-6402-4e63-b9b1-2ea6858d6bcf" />
+<img width="2429" height="584" alt="image" src="https://github.com/user-attachments/assets/079ce82c-3f95-4f24-ba2a-78ebef4ff6c1" />
+
+7.2 Установка Kibana 
+
+```pythom
+# Установить Docker
+sudo apt update
+sudo apt install -y docker.io
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Запустить Kibana (подключаемся к elasticsearch по внутреннему IP 10.2.0.35)
+sudo docker run -d \
+  --name kibana \
+  --restart always \
+  -p 5601:5601 \
+  -e "ELASTICSEARCH_HOSTS=http://10.2.0.35:9200" \
+  docker.elastic.co/kibana/kibana:7.17.23
+
+# Проверить, что Kibana запустилась
+sudo docker ps
+
+# Посмотреть логи (дождаться готовности)
+sudo docker logs -f kibana
+```
+
+
+7.2 Установка Elastic
+
+```Python
+# Подключиться к elasticsearch
+ssh ubuntu@10.2.0.35
+
+# Установка
+sudo apt update
+sudo apt install -y wget gnupg curl
+
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+echo "deb https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
+
+sudo apt update
+sudo apt install -y elasticsearch
+
+# Настройка
+sudo tee /etc/elasticsearch/elasticsearch.yml > /dev/null <<EOF
+network.host: 0.0.0.0
+discovery.type: single-node
+xpack.security.enabled: false
+EOF
+
+sudo systemctl start elasticsearch
+sudo systemctl enable elasticsearch
+
+# Проверка
+curl -X GET "localhost:9200"
+
+# Выйти из elasticsearch
+exit
+```
 
 
 
