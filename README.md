@@ -701,6 +701,8 @@ curl -X GET "http://10.2.0.35:9200/_cat/indices?v"
 <img width="2540" height="1276" alt="image" src="https://github.com/user-attachments/assets/df783057-9a8b-459d-a1c7-86ea4fa920a9" />
 
 7.6 Снапшоты 
+7.6.1 Создание 
+
 ```Python 
 # Создать снапшоты для всех 6 дисков
 for disk_id in epdeoobpssu9ba221pov fhm1kv92kdsinot8ieac fhmfqu7eov70jq0mmed1 fhmip9m6ehfd42p1eil6 fhmk6k3dk1pjtukmnghl fhmvf2a22n41lg7a1u5e; do
@@ -714,4 +716,81 @@ done
 ```
 <img width="1359" height="621" alt="image" src="https://github.com/user-attachments/assets/54ed9527-a78e-4274-bc97-d4273548fb10" />
 
-```Python 
+7.6.2 Проверка 
+
+```Python
+kobzev@kobzev-server:~/diploma/terraform$ yc compute snapshot list --format yaml | grep -E "name:|status:" | paste - - | column -t
+name:  snapshot-20260528-125112-t8ieac  status:  READY
+name:  snapshot-20260528-125150-0mmed1  status:  READY
+name:  snapshot-20260528-125308-kmnghl  status:  READY
+name:  snapshot-20260528-125345-7a1u5e  status:  READY
+name:  snapshot-20260528-125227-p1eil6  status:  READY
+name:  snapshot-20260528-125026-221pov  status:  READY
+kobzev@kobzev-server:~/diploma/terraform$
+```
+<img width="1315" height="402" alt="image" src="https://github.com/user-attachments/assets/afbdde05-1808-41c8-b1f5-e4045501900d" />
+
+7.6.3 Создадим расписание для автоматических ежедневных снапшотов
+
+```Python
+yc compute snapshot-schedule create daily-snapshots \
+  --expression "0 0 * * *" \
+  --retention-period "168h" \
+  --description "Ежедневные снапшоты для дипломного проекта"
+```
+<img width="823" height="354" alt="image" src="https://github.com/user-attachments/assets/5fd4a74e-9cdf-4759-937c-7da48566c686" />
+
+Добавляем диски 
+
+```Python
+yc compute snapshot-schedule add-disks daily-snapshots \
+  --disk-id epdeoobpssu9ba221pov \
+  --disk-id fhm1kv92kdsinot8ieac \
+  --disk-id fhmfqu7eov70jq0mmed1 \
+  --disk-id fhmip9m6ehfd42p1eil6 \
+  --disk-id fhmk6k3dk1pjtukmnghl \
+  --disk-id fhmvf2a22n41lg7a1u5e
+```
+
+<img width="971" height="361" alt="image" src="https://github.com/user-attachments/assets/f5e410ff-903c-4114-a402-e0cfe26a361b" />
+
+Отключаем прерываемость у всех ВМ
+
+```Python
+# Отключить прерываемость для всех ВМ
+for vm in web-a web-b bastion zabbix7 elasticsearch kibana; do
+  echo "Отключаю прерываемость для $vm..."
+  yc compute instance update --name $vm --preemptible=false
+done
+```
+
+<img width="1288" height="391" alt="image" src="https://github.com/user-attachments/assets/3131f318-cbe2-464f-8c64-d762954b815a" />
+
+Пошаговое отключение прерываемости
+
+```Python
+# Остановить каждую ВМ, изменить параметр, затем запустить
+for vm in web-a web-b bastion zabbix7 elasticsearch kibana; do
+  echo "=== Обработка $vm ==="
+  echo "Останавливаем $vm..."
+  yc compute instance stop --name $vm
+  
+  echo "Отключаем прерываемость для $vm..."
+  yc compute instance update --name $vm --preemptible=false
+  
+  echo "Запускаем $vm..."
+  yc compute instance start --name $vm
+  echo "=== $vm готово ==="
+  echo ""
+done
+```
+
+<img width="862" height="311" alt="image" src="https://github.com/user-attachments/assets/f8db9da1-8562-448a-8014-538a0d60aab6" />
+
+
+
+Снимки дисков
+
+<img width="1816" height="574" alt="image" src="https://github.com/user-attachments/assets/ac4a12db-f38e-49c9-a1c4-49da87836212" />
+
+<img width="1896" height="430" alt="image" src="https://github.com/user-attachments/assets/6a6d85ef-b737-4530-bab5-df0182138fdd" />
