@@ -346,10 +346,114 @@ cd ~/diploma/terraform
 nano vms.tf
 ```
 
+<img width="974" height="676" alt="image" src="https://github.com/user-attachments/assets/b0ebcec0-ccf3-4e00-a4ca-fc16372f7aa3" />
+
+
+6.2 После добавления конфигурации выполнена команда
+
+```python
+terraform apply -auto-approve
+```
+
+<img width="974" height="1088" alt="image" src="https://github.com/user-attachments/assets/0b5e9927-2aba-49db-a406-f653febf31f1" />
+
+<img width="2305" height="456" alt="image" src="https://github.com/user-attachments/assets/44bea3e7-7974-49c5-a6eb-3629f961f251" />
+
+6.3 Добавляем Zabbix в Ansible inventory.
+
+```python
+cd ~/diploma/ansible
+nano inventory
+```
+
+<img width="1158" height="618" alt="image" src="https://github.com/user-attachments/assets/86e2d482-c061-4e18-bf1b-bfd66e9a1a33" />
+
+
+6.4 Почему не удалось установить Zabbix через Ansible плейбук
+В ходе выполнения дипломной работы была предпринята попытка автоматизировать установку Zabbix Server с использованием Ansible. Однако в процессе возникли следующие проблемы:
+1) В репозитории Zabbix по умолчанию использовался пакет для Ubuntu 24.04, в то время как созданная виртуальная машина работала под управлением Ubuntu 22.04. Это привело к ошибкам при установке:
+
+```python
+E: Unable to correct problems, you have held broken packages.
+```
+Пакеты Zabbix для Ubuntu 24.04 требовали более новые версии системных библиотек:
+
+1) libc6 (>= 2.38) — в Ubuntu 22.04 доступна версия 2.35
+2) libssl3t64 (>= 3.0.0) — отсутствует в стандартных репозиториях Ubuntu 22.04
+
+6.5 Устанавливаем через SSH Zabix .
+
+Подключись к ВМ zabbix
+
+```python
+ssh ubuntu@89.169.156.132
+```
+
+```python
+# Удаляем неправильный репозиторий
+sudo rm -f /etc/apt/sources.list.d/zabbix*.list
+sudo apt update
+
+# Устанавливаем PostgreSQL
+sudo apt install -y postgresql postgresql-contrib
+
+# Создаём БД и пользователя
+sudo -u postgres psql -c "CREATE USER zabbix WITH PASSWORD 'zabbix_pass123';"
+sudo -u postgres psql -c "CREATE DATABASE zabbix OWNER zabbix;"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE zabbix TO zabbix;"
+
+# Скачиваем и устанавливаем Zabbix 7.0 для Ubuntu 22.04
+wget https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu22.04_all.deb
+sudo dpkg -i zabbix-release_7.0-2+ubuntu22.04_all.deb
+sudo apt update
+
+# Устанавливаем Zabbix Server, frontend, agent2, nginx
+sudo apt install -y zabbix-server-pgsql zabbix-frontend-php php8.1-pgsql zabbix-agent2 nginx
+
+# Импортируем схему БД
+zcat /usr/share/zabbix-sql-scripts/postgresql/server.sql.gz | sudo -u zabbix psql zabbix
+
+# Настраиваем Zabbix Server
+sudo sed -i 's/# DBPassword=/DBPassword=zabbix_pass123/' /etc/zabbix/zabbix_server.conf
+sudo sed -i 's/DBPassword=/DBPassword=zabbix_pass123/' /etc/zabbix/zabbix_server.conf
+
+# Настраиваем nginx для Zabbix (меняем порт на 8080)
+sudo sed -i 's/listen 80;/listen 8080;/' /etc/zabbix/nginx.conf
+
+# Запускаем сервисы
+sudo systemctl restart zabbix-server zabbix-agent2 nginx php8.1-fpm
+sudo systemctl enable zabbix-server zabbix-agent2 nginx php8.1-fpm
+```
+
+Проверь, что Zabbix сервер запустился:
+```python
+sudo systemctl status zabbix-server --no-pager
+```
+
+У меня проблемы с забиксом 5.0 - графики не отображались, хотя данные в Latest data были, все переустановил, агенты на хосты тоже переустановил
+
+<img width="884" height="554" alt="image" src="https://github.com/user-attachments/assets/58404855-34a2-4c65-a522-a33de440141b" />
+
+<img width="1084" height="663" alt="image" src="https://github.com/user-attachments/assets/63c4859e-64e4-47f4-b695-27f0fe9cf94f" />
+
+<img width="1026" height="597" alt="image" src="https://github.com/user-attachments/assets/2c53cf1b-bb01-4c12-a350-2373c0f48273" />
+
+<img width="2552" height="1240" alt="image" src="https://github.com/user-attachments/assets/31aa26cf-c2d2-4ddd-85f3-64d0f774dcdf" />
+
+<img width="1181" height="708" alt="image" src="https://github.com/user-attachments/assets/253a6cec-18ed-4e59-a178-446f83fe7569" />
+
+<img width="2366" height="739" alt="image" src="https://github.com/user-attachments/assets/53427bfb-307b-444e-8c7c-789471ea130c" />
+
+<img width="2557" height="1291" alt="image" src="https://github.com/user-attachments/assets/4189387f-8ea9-42fb-96d0-d0071bcc9f14" />
+
+<img width="2539" height="1311" alt="image" src="https://github.com/user-attachments/assets/29db8f7a-1a86-4c11-b5f9-6d8fce0a6e4b" />
+
+<img width="2548" height="1279" alt="image" src="https://github.com/user-attachments/assets/5a63b9b7-0497-4b50-aa57-7d8ca38f6f14" />
+
+<img width="2556" height="1281" alt="image" src="https://github.com/user-attachments/assets/7a0a22dd-57cd-4919-895b-486e022df517" />
 
 
 
-![Uploading image.png…]()
 
 
 
