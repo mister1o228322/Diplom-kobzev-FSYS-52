@@ -1,0 +1,43 @@
+---
+- name: Install Filebeat on web servers
+  hosts: web
+  become: yes
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+    - name: Start Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+    - name: Create filebeat config directory
+      file:
+        path: /etc/filebeat
+        state: directory
+    - name: Create filebeat configuration file
+      copy:
+        content: |
+          filebeat.inputs:
+          - type: log
+            enabled: true
+            paths:
+              - /var/log/nginx/access.log
+              - /var/log/nginx/error.log
+            fields:
+              service: nginx
+              host: {{ ansible_hostname }}
+          output.elasticsearch:
+            hosts: ["10.2.0.35:9200"]
+        dest: /etc/filebeat/filebeat.yml
+    - name: Run Filebeat container
+      docker_container:
+        name: filebeat
+        image: docker.elastic.co/beats/filebeat:7.17.23
+        state: started
+        restart_policy: always
+        user: root
+        volumes:
+          - /etc/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+          - /var/log/nginx:/var/log/nginx:ro

@@ -1,0 +1,13 @@
+[bastion]
+bastion ansible_host=93.77.186.1
+
+[web]
+web-a ansible_host=10.2.0.14
+web-b ansible_host=10.3.0.31
+
+[zabbix]
+zabbix ansible_host=89.169.156.132
+
+[all:vars]
+ansible_user=ubuntu
+ansible_ssh_private_key_file=~/.ssh/id_rsa

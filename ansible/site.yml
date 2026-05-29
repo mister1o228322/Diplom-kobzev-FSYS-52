@@ -1,0 +1,4 @@
+---
+- import_playbook: playbooks/elasticsearch.yml
+- import_playbook: playbooks/kibana.yml
+- import_playbook: playbooks/filebeat.yml
